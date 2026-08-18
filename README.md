@@ -13,17 +13,23 @@ Aplikasi web untuk menyusun **Kartu Rencana Studi (KRS)** dari file Excel penawa
 - **Akun** dengan registrasi, verifikasi email, reset password, 2FA, dan passkey
 - **Provider AI per pengguna** (Anthropic, Gemini, Ollama, OpenRouter, 9Router lokal, atau gateway kustom)
 
+
+
 ## Stack
 
-| Lapisan | Teknologi |
-| --- | --- |
-| Backend | PHP 8.3, Laravel 13 |
-| Frontend | Vue 3, Inertia.js 3, Tailwind CSS 4, Reka UI |
-| Auth | Laravel Fortify |
-| AI | Laravel AI SDK (`laravel/ai`) |
-| Routing FE | Laravel Wayfinder |
-| Excel / PDF | PhpSpreadsheet, DomPDF |
-| Tes | Pest 4, Larastan, Pint |
+
+| Lapisan     | Teknologi                                    |
+| ----------- | -------------------------------------------- |
+| Backend     | PHP 8.3, Laravel 13                          |
+| Frontend    | Vue 3, Inertia.js 3, Tailwind CSS 4, Reka UI |
+| Auth        | Laravel Fortify                              |
+| AI          | Laravel AI SDK (`laravel/ai`)                |
+| Routing FE  | Laravel Wayfinder                            |
+| Excel / PDF | PhpSpreadsheet, DomPDF                       |
+| Tes         | Pest 4, Larastan, Pint                       |
+
+
+
 
 ## Kebutuhan
 
@@ -32,10 +38,12 @@ Aplikasi web untuk menyusun **Kartu Rencana Studi (KRS)** dari file Excel penawa
 - Node.js **20.19+** (disarankan 22 LTS) dan npm
 - Database: **SQLite** secara default; MySQL/PostgreSQL juga didukung
 
+
+
 ## Instalasi
 
 ```bash
-git clone <url-repo> "AI-Assisted KRS Planner"
+git clone https://github.com/Nafunnn/AI-Assisted-KRS-Planner "AI-Assisted KRS Planner"
 cd "AI-Assisted KRS Planner"
 composer setup
 ```
@@ -61,9 +69,13 @@ Akun uji (hanya jika Anda menjalankan seeder):
 php artisan db:seed
 ```
 
-| Email | Password |
-| --- | --- |
+
+| Email              | Password   |
+| ------------------ | ---------- |
 | `test@example.com` | `password` |
+
+
+
 
 ## Menjalankan aplikasi
 
@@ -87,8 +99,10 @@ Jika perubahan frontend tidak muncul, jalankan `npm run dev` atau `npm run build
 
 Header baris pertama **harus persis** seperti ini (urutan dan ejaan termasuk titik pada `Kelp.`):
 
+
 | Kode MK | Nama Mata Kuliah | SKS | T/P | Kelp. | Jadwal 1 | Jadwal 2 | Jadwal 3 | Jam |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ------- | ---------------- | --- | --- | ----- | -------- | -------- | -------- | --- |
+
 
 Aturan kolom:
 
@@ -112,14 +126,16 @@ Asisten hanya aktif setelah pengguna menyimpan dan mengaktifkan provider di **Se
 
 Provider yang didukung:
 
-| Provider | Keterangan |
-| --- | --- |
-| Anthropic | Claude via API key |
-| Google Gemini | Gemini via API key |
-| Ollama | Model lokal (`http://localhost:11434` secara default) |
-| OpenRouter | Gateway multi-model |
-| 9Router | Gateway OpenAI-compatible lokal |
-| Custom Gateway | Endpoint OpenAI-compatible lain |
+
+| Provider       | Keterangan                                            |
+| -------------- | ----------------------------------------------------- |
+| Anthropic      | Claude via API key                                    |
+| Google Gemini  | Gemini via API key                                    |
+| Ollama         | Model lokal (`http://localhost:11434` secara default) |
+| OpenRouter     | Gateway multi-model                                   |
+| 9Router        | Gateway OpenAI-compatible lokal                       |
+| Custom Gateway | Endpoint OpenAI-compatible lain                       |
+
 
 Setelah provider aktif, buka rencana KRS lalu pakai panel asisten. Contoh permintaan:
 
@@ -152,6 +168,8 @@ npm run types:check                 # Vue / TypeScript
 composer run ci:check               # lint + typecheck + tes
 ```
 
+
+
 ## Struktur singkat
 
 ```text
@@ -166,12 +184,16 @@ tests/Feature/          Tes auth, impor, planner, AI, ekspor
 
 Rute utama (setelah login dan verifikasi email):
 
-| Path | Fungsi |
-| --- | --- |
-| `/krs` | Daftar penawaran dan rencana |
-| `/krs/planner/{offering}/{plan}` | Planner jadwal |
-| `/krs/plans/{plan}/export/pdf` | Unduh PDF |
-| `/settings/ai-providers` | Konfigurasi provider AI |
+
+| Path                             | Fungsi                       |
+| -------------------------------- | ---------------------------- |
+| `/krs`                           | Daftar penawaran dan rencana |
+| `/krs/planner/{offering}/{plan}` | Planner jadwal               |
+| `/krs/plans/{plan}/export/pdf`   | Unduh PDF                    |
+| `/settings/ai-providers`         | Konfigurasi provider AI      |
+
+
+
 
 ## Lisensi
 
