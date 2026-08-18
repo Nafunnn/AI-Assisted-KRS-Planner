@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
+import { Form, Head, router, useHttp } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { edit as editAiProviders } from '@/routes/ai-providers';
+import {
+    edit as editAiProviders,
+    test as testAiProviderDraft,
+    testSaved as testAiProviderSaved,
+} from '@/routes/ai-providers';
 
 type AiConfig = {
     id: number;
@@ -23,6 +29,15 @@ type ProviderOption = {
     label: string;
 };
 
+type TestResult = {
+    status: 'ok' | 'error';
+    message: string;
+    reply?: string;
+    provider_label?: string;
+    model?: string | null;
+    latency_ms?: number;
+};
+
 defineOptions({
     layout: {
         breadcrumbs: [{ title: 'AI Providers', href: editAiProviders() }],
@@ -34,12 +49,94 @@ const { configs, providers } = defineProps<{
     providers: ProviderOption[];
 }>();
 
+const draftTestHttp = useHttp({
+    provider: '',
+    base_url: '',
+    api_key: '',
+    default_model: '',
+});
+
+const savedTestHttp = useHttp({});
+
+const testingDraft = ref(false);
+const testingConfigId = ref<number | null>(null);
+
 function activateConfig(id: number): void {
     router.patch(`/settings/ai-providers/${id}/activate`);
 }
 
 function deleteConfig(id: number): void {
     router.delete(`/settings/ai-providers/${id}`);
+}
+
+function showTestResult(result: TestResult): void {
+    if (result.status === 'ok') {
+        const details = [
+            result.provider_label,
+            result.model,
+            result.latency_ms !== undefined
+                ? `${result.latency_ms} ms`
+                : null,
+        ]
+            .filter(Boolean)
+            .join(' · ');
+
+        toast.success(
+            details
+                ? `${result.message} (${details})`
+                : result.message,
+            result.reply ? { description: result.reply } : undefined,
+        );
+
+        return;
+    }
+
+    toast.error(result.message);
+}
+
+async function testDraftFromForm(form: HTMLFormElement): Promise<void> {
+    if (testingDraft.value) {
+        return;
+    }
+
+    const formData = new FormData(form);
+
+    draftTestHttp.provider = String(formData.get('provider') ?? '');
+    draftTestHttp.base_url = String(formData.get('base_url') ?? '');
+    draftTestHttp.api_key = String(formData.get('api_key') ?? '');
+    draftTestHttp.default_model = String(formData.get('default_model') ?? '');
+
+    testingDraft.value = true;
+
+    try {
+        const result = (await draftTestHttp.post(
+            testAiProviderDraft.url(),
+        )) as TestResult;
+        showTestResult(result);
+    } catch {
+        toast.error('Gagal menguji koneksi provider.');
+    } finally {
+        testingDraft.value = false;
+    }
+}
+
+async function testSavedConfig(id: number): Promise<void> {
+    if (testingConfigId.value !== null) {
+        return;
+    }
+
+    testingConfigId.value = id;
+
+    try {
+        const result = (await savedTestHttp.post(
+            testAiProviderSaved.url(id),
+        )) as TestResult;
+        showTestResult(result);
+    } catch {
+        toast.error('Gagal menguji koneksi provider.');
+    } finally {
+        testingConfigId.value = null;
+    }
 }
 </script>
 
@@ -50,7 +147,7 @@ function deleteConfig(id: number): void {
         <Heading
             variant="small"
             title="AI Providers"
-            description="Konfigurasi provider AI untuk auto-schedule dan review jadwal KRS"
+            description="Konfigurasi provider AI untuk asisten KRS (review, saran, buat jadwal)"
         />
 
         <Form
@@ -80,7 +177,7 @@ function deleteConfig(id: number): void {
 
             <div class="grid gap-2">
                 <Label for="name">Nama</Label>
-                <Input id="name" name="name" placeholder="OpenAI Production" required />
+                <Input id="name" name="name" placeholder="9Router Local" required />
                 <InputError :message="errors.name" />
             </div>
 
@@ -89,7 +186,7 @@ function deleteConfig(id: number): void {
                 <Input
                     id="base_url"
                     name="base_url"
-                    placeholder="https://openrouter.ai/api/v1"
+                    placeholder="https://openrouter.ai/api/v1 atau http://127.0.0.1:20128/v1"
                 />
                 <InputError :message="errors.base_url" />
             </div>
@@ -105,7 +202,7 @@ function deleteConfig(id: number): void {
                 <Input
                     id="default_model"
                     name="default_model"
-                    placeholder="gpt-4o-mini"
+                    placeholder="claude-sonnet-4"
                 />
                 <InputError :message="errors.default_model" />
             </div>
@@ -115,9 +212,24 @@ function deleteConfig(id: number): void {
                 Jadikan provider aktif
             </label>
 
-            <Button type="submit" :disabled="processing">
-                Simpan Konfigurasi
-            </Button>
+            <div class="flex flex-wrap gap-2">
+                <Button type="submit" :disabled="processing">
+                    Simpan Konfigurasi
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    :disabled="testingDraft"
+                    @click="
+                        testDraftFromForm(
+                            ($event.currentTarget as HTMLButtonElement)
+                                .form as HTMLFormElement,
+                        )
+                    "
+                >
+                    {{ testingDraft ? 'Menguji...' : 'Uji koneksi' }}
+                </Button>
+            </div>
         </Form>
 
         <div class="space-y-3">
@@ -151,6 +263,18 @@ function deleteConfig(id: number): void {
                     </p>
                 </div>
                 <div class="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        :disabled="testingConfigId === config.id"
+                        @click="testSavedConfig(config.id)"
+                    >
+                        {{
+                            testingConfigId === config.id
+                                ? 'Menguji...'
+                                : 'Uji'
+                        }}
+                    </Button>
                     <Button
                         v-if="!config.is_active"
                         variant="outline"

@@ -114,6 +114,92 @@
     }
 }
 
+@layer components {
+    .ai-markdown {
+        @apply text-sm leading-relaxed;
+    }
+
+    .ai-markdown > :first-child {
+        @apply mt-0;
+    }
+
+    .ai-markdown > :last-child {
+        @apply mb-0;
+    }
+
+    .ai-markdown :where(p) {
+        @apply my-2;
+    }
+
+    .ai-markdown :where(h1, h2, h3, h4) {
+        @apply mt-3 mb-1.5 font-semibold leading-snug;
+    }
+
+    .ai-markdown :where(h1) {
+        @apply text-base;
+    }
+
+    .ai-markdown :where(h2) {
+        @apply text-sm;
+    }
+
+    .ai-markdown :where(h3, h4) {
+        @apply text-sm;
+    }
+
+    .ai-markdown :where(ul, ol) {
+        @apply my-2 pl-5;
+    }
+
+    .ai-markdown :where(ul) {
+        @apply list-disc;
+    }
+
+    .ai-markdown :where(ol) {
+        @apply list-decimal;
+    }
+
+    .ai-markdown :where(li) {
+        @apply my-0.5;
+    }
+
+    .ai-markdown :where(a) {
+        @apply text-primary underline underline-offset-2;
+    }
+
+    .ai-markdown :where(blockquote) {
+        @apply my-2 border-l-2 border-border pl-3 text-muted-foreground italic;
+    }
+
+    .ai-markdown :where(pre) {
+        @apply my-2 overflow-x-auto rounded-md border bg-background/60 p-3;
+    }
+
+    .ai-markdown :where(code) {
+        @apply rounded bg-background/60 px-1 py-0.5 font-mono text-[0.85em];
+    }
+
+    .ai-markdown :where(pre code) {
+        @apply bg-transparent p-0;
+    }
+
+    .ai-markdown :where(table) {
+        @apply my-2 block w-full overflow-x-auto border-collapse text-xs;
+    }
+
+    .ai-markdown :where(th, td) {
+        @apply border border-border px-2 py-1 text-left;
+    }
+
+    .ai-markdown :where(th) {
+        @apply bg-background/50 font-medium;
+    }
+
+    .ai-markdown :where(hr) {
+        @apply my-3 border-border;
+    }
+}
+
 :root {
     --background: hsl(0 0% 100%);
     --foreground: hsl(0 0% 3.9%);

@@ -176,3 +176,24 @@ test('planner grid covers 07:00 to 21:00', function () {
             ->where('gridConfig.end_hour', '21:00')
         );
 });
+
+test('planner can refresh calendar with a partial reload of plan data', function () {
+    $user = User::factory()->create();
+    $offering = CourseOffering::factory()->for($user)->create();
+    $plan = KrsPlan::factory()->for($user)->for($offering)->create();
+
+    $this->actingAs($user)
+        ->get(route('krs.planner', [$offering, $plan]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('krs/Planner')
+            ->has('plan')
+            ->has('plans')
+            ->reloadOnly(['plan', 'plans'], fn (Assert $reload) => $reload
+                ->where('plan.id', $plan->id)
+                ->has('plans', 1)
+                ->missing('offering')
+                ->missing('gridConfig')
+            )
+        );
+});

@@ -86,17 +86,17 @@ function onSelect(sectionId: number): void {
     <div v-if="visibleSections.length > 0 || isCourseSelected" class="rounded-lg border">
         <button
             type="button"
-            class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-muted/50"
+            class="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50"
             @click="expanded = !expanded"
         >
-            <div class="flex items-center gap-2">
+            <div class="flex min-w-0 items-center gap-2">
                 <span
-                    class="size-2.5 rounded-full"
+                    class="size-2.5 shrink-0 rounded-full"
                     :class="courseColorClass(course.id)"
                 />
-                <div>
+                <div class="min-w-0">
                     <div class="text-sm font-medium">{{ course.code }}</div>
-                    <div class="text-xs text-muted-foreground">
+                    <div class="truncate text-xs text-muted-foreground">
                         {{ course.name }} · {{ course.sks }} SKS
                     </div>
                     <div
@@ -108,7 +108,7 @@ function onSelect(sectionId: number): void {
                     </div>
                 </div>
             </div>
-            <span class="text-xs text-muted-foreground">
+            <span class="shrink-0 text-xs text-muted-foreground">
                 {{
                     isCourseSelected
                         ? 'Terpilih'
@@ -124,7 +124,7 @@ function onSelect(sectionId: number): void {
                 draggable="true"
                 role="button"
                 tabindex="0"
-                class="w-full cursor-grab rounded-md border px-3 py-2 text-left text-sm transition select-none active:cursor-grabbing hover:bg-muted/60"
+                class="min-h-11 w-full cursor-grab rounded-md border px-3 py-2.5 text-left text-sm transition select-none active:cursor-grabbing hover:bg-muted/60"
                 :class="
                     selectedSectionIds.includes(section.id)
                         ? 'border-primary bg-primary/5 ring-1 ring-primary/30'

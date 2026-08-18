@@ -26,6 +26,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
 
+    Route::post('settings/ai-providers/test', [AiProviderConfigController::class, 'testDraft'])->name('ai-providers.test');
+    Route::post('settings/ai-providers/{aiProviderConfig}/test', [AiProviderConfigController::class, 'testSaved'])->name('ai-providers.test-saved');
     Route::get('settings/ai-providers', [AiProviderConfigController::class, 'edit'])->name('ai-providers.edit');
     Route::post('settings/ai-providers', [AiProviderConfigController::class, 'store'])->name('ai-providers.store');
     Route::patch('settings/ai-providers/{aiProviderConfig}/activate', [AiProviderConfigController::class, 'activate'])->name('ai-providers.activate');

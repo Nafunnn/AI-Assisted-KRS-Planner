@@ -8,9 +8,9 @@ const { plan } = defineProps<{
 
 <template>
     <div
-        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3"
+        class="flex flex-col gap-3 rounded-lg border bg-card px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4"
     >
-        <div class="flex flex-wrap gap-4 text-sm">
+        <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <span>
                 <strong>{{ plan.course_count }}</strong> mata kuliah
             </span>

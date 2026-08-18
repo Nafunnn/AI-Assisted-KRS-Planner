@@ -60,7 +60,7 @@ function submitImport(event: Event): void {
 <template>
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
-            <Button>Import Penawaran</Button>
+            <Button class="min-h-11 w-full sm:min-h-9 sm:w-auto">Import Penawaran</Button>
         </DialogTrigger>
         <DialogContent>
             <form @submit="submitImport">

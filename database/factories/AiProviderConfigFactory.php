@@ -19,8 +19,8 @@ class AiProviderConfigFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'provider' => AiProvider::OpenAi,
-            'name' => 'OpenAI Default',
+            'provider' => AiProvider::NineRouter,
+            'name' => '9Router Default',
             'base_url' => null,
             'api_key' => 'sk-test-key',
             'default_model' => 'gpt-4o-mini',

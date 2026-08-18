@@ -20,9 +20,9 @@ const { offerings } = defineProps<{
 <template>
     <Head title="KRS Planner" />
 
-    <div class="flex h-full flex-1 flex-col gap-4 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
+    <div class="flex h-full flex-1 flex-col gap-4 p-3 sm:p-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div class="min-w-0">
                 <h1 class="text-xl font-semibold">KRS Planner</h1>
                 <p class="text-sm text-muted-foreground">
                     Import penawaran mata kuliah dan susun jadwal KRS
@@ -51,16 +51,16 @@ const { offerings } = defineProps<{
                 :key="offering.id"
                 class="rounded-lg border bg-card p-4"
             >
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h2 class="font-medium">{{ offering.title }}</h2>
-                        <p class="text-sm text-muted-foreground">
+                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <h2 class="font-medium break-words">{{ offering.title }}</h2>
+                        <p class="text-sm text-muted-foreground break-all">
                             {{ offering.courses_count }} mata kuliah ·
                             {{ offering.source_filename }}
                         </p>
                     </div>
                     <Form v-bind="storePlan.form({ offering: offering.id })">
-                        <Button type="submit" variant="outline" size="sm">
+                        <Button type="submit" variant="outline" size="sm" class="min-h-11 w-full sm:min-h-8 sm:w-auto">
                             Plan baru
                         </Button>
                     </Form>
@@ -72,13 +72,13 @@ const { offerings } = defineProps<{
                         :key="plan.id"
                         class="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2"
                     >
-                        <div>
-                            <p class="text-sm font-medium">{{ plan.name }}</p>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium">{{ plan.name }}</p>
                             <p class="text-xs text-muted-foreground">
                                 {{ plan.items_count }} kelompok dipilih
                             </p>
                         </div>
-                        <Button as-child size="sm">
+                        <Button as-child size="sm" class="min-h-11 shrink-0 sm:min-h-8">
                             <Link
                                 :href="
                                     planner({

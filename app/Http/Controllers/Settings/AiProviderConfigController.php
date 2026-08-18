@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\AI\Services\AiProviderTestService;
 use App\Enums\AiProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreAiProviderConfigRequest;
+use App\Http\Requests\Settings\TestAiProviderConfigRequest;
 use App\Models\AiProviderConfig;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -71,6 +74,20 @@ class AiProviderConfigController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Provider AI diaktifkan.']);
 
         return to_route('ai-providers.edit');
+    }
+
+    public function testSaved(Request $request, AiProviderConfig $aiProviderConfig, AiProviderTestService $tester): JsonResponse
+    {
+        abort_unless($aiProviderConfig->user_id === $request->user()->id, 403);
+
+        return response()->json($tester->test($aiProviderConfig));
+    }
+
+    public function testDraft(TestAiProviderConfigRequest $request, AiProviderTestService $tester): JsonResponse
+    {
+        $config = $tester->configFromInput($request->user(), $request->validated());
+
+        return response()->json($tester->test($config));
     }
 
     public function destroy(Request $request, AiProviderConfig $aiProviderConfig): RedirectResponse
