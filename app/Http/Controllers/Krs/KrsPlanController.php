@@ -48,7 +48,7 @@ class KrsPlanController extends Controller
         $this->authorize('view', $plan);
         abort_unless($plan->course_offering_id === $offering->id, 404);
 
-        $offering->load(['courses.sections.schedules']);
+        $offering->load(['courses.sections.schedules', 'courses.sections.course']);
         $plan->load([
             'items.courseSection.schedules',
             'items.courseSection.course',
@@ -56,14 +56,14 @@ class KrsPlanController extends Controller
 
         $selectedSections = $plan->items->map(fn ($item) => $item->courseSection);
         $conflicts = $this->conflictDetector->detect($selectedSections);
-        $unavailableSectionIds = $this->conflictDetector->unavailableSectionIds(
+        $unavailableSections = $this->conflictDetector->unavailableSectionReasons(
             $selectedSections,
             $offering->courses->flatMap(fn ($course) => $course->sections),
         );
 
         return Inertia::render('krs/Planner', [
             'offering' => $this->offeringController->transformOffering($offering),
-            'plan' => $this->transformPlan($plan, $conflicts, $unavailableSectionIds),
+            'plan' => $this->transformPlan($plan, $conflicts, $unavailableSections),
             'plans' => $this->transformPlanSummaries($offering),
             'gridConfig' => $this->gridConfig(),
         ]);
@@ -166,10 +166,10 @@ class KrsPlanController extends Controller
 
     /**
      * @param  list<array<string, mixed>>  $conflicts
-     * @param  list<int>  $unavailableSectionIds
+     * @param  list<array<string, mixed>>  $unavailableSections
      * @return array<string, mixed>
      */
-    private function transformPlan(KrsPlan $plan, array $conflicts, array $unavailableSectionIds = []): array
+    private function transformPlan(KrsPlan $plan, array $conflicts, array $unavailableSections = []): array
     {
         $selectedSectionIds = $plan->items->pluck('course_section_id')->all();
         $conflictSectionIds = collect($conflicts)
@@ -189,7 +189,8 @@ class KrsPlanController extends Controller
                 ->unique()
                 ->values()
                 ->all(),
-            'unavailable_section_ids' => $unavailableSectionIds,
+            'unavailable_section_ids' => array_column($unavailableSections, 'section_id'),
+            'unavailable_sections' => $unavailableSections,
             'course_count' => $plan->items->unique(fn ($item) => $item->courseSection->course_id)->count(),
             'has_conflicts' => $conflicts !== [],
             'conflict_section_ids' => $conflictSectionIds,
@@ -227,16 +228,17 @@ class KrsPlanController extends Controller
             'items.courseSection.schedules',
             'items.courseSection.course',
             'courseOffering.courses.sections.schedules',
+            'courseOffering.courses.sections.course',
         ]);
 
         $selectedSections = $plan->items->map(fn ($item) => $item->courseSection);
         $conflicts = $this->conflictDetector->detect($selectedSections);
-        $unavailableSectionIds = $this->conflictDetector->unavailableSectionIds(
+        $unavailableSections = $this->conflictDetector->unavailableSectionReasons(
             $selectedSections,
             $plan->courseOffering->courses->flatMap(fn ($course) => $course->sections),
         );
 
-        return $this->transformPlan($plan, $conflicts, $unavailableSectionIds);
+        return $this->transformPlan($plan, $conflicts, $unavailableSections);
     }
 
     /**

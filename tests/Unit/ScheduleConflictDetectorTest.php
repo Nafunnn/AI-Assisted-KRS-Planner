@@ -97,6 +97,41 @@ test('marks other course sections with overlapping schedules as unavailable', fu
         ->and($unavailable)->not->toContain($free->id);
 });
 
+test('unavailable section reasons name the selected group that overlaps', function () {
+    $offering = CourseOffering::factory()->create();
+    $courseA = Course::factory()->for($offering)->create(['code' => 'A11.54001', 'name' => 'Algoritma']);
+    $courseB = Course::factory()->for($offering)->create(['code' => 'A11.54002', 'name' => 'Basis Data']);
+
+    $selected = CourseSection::factory()->for($courseA)->create(['group_code' => 'A11.54001']);
+    $overlapping = CourseSection::factory()->for($courseB)->create(['group_code' => 'A11.54002']);
+
+    SectionSchedule::factory()->for($selected)->create([
+        'day' => DayOfWeek::Monday,
+        'starts_at' => '07:00:00',
+        'ends_at' => '09:30:00',
+    ]);
+
+    SectionSchedule::factory()->for($overlapping)->create([
+        'day' => DayOfWeek::Monday,
+        'starts_at' => '07:00:00',
+        'ends_at' => '09:30:00',
+    ]);
+
+    $detector = app(ScheduleConflictDetector::class);
+    $reasons = $detector->unavailableSectionReasons(
+        collect([$selected->fresh(['schedules', 'course'])]),
+        collect([$selected, $overlapping])->map->fresh(['schedules', 'course']),
+    );
+
+    expect($reasons)->toHaveCount(1)
+        ->and($reasons[0]['section_id'])->toBe($overlapping->id)
+        ->and($reasons[0]['conflicts_with'][0]['course_code'])->toBe('A11.54001')
+        ->and($reasons[0]['conflicts_with'][0]['group_code'])->toBe('A11.54001')
+        ->and($reasons[0]['conflicts_with'][0]['day_label'])->toBe('Senin')
+        ->and($reasons[0]['conflicts_with'][0]['starts_at'])->toBe('07:00')
+        ->and($reasons[0]['conflicts_with'][0]['ends_at'])->toBe('09:30');
+});
+
 test('does not mark same course alternative sections as unavailable', function () {
     $offering = CourseOffering::factory()->create();
     $course = Course::factory()->for($offering)->create();

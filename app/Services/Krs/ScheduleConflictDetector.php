@@ -74,9 +74,21 @@ class ScheduleConflictDetector
     /**
      * @param  Collection<int, CourseSection>  $selectedSections
      * @param  Collection<int, CourseSection>  $candidateSections
-     * @return list<int>
+     * @return list<array{
+     *     section_id: int,
+     *     conflicts_with: list<array{
+     *         section_id: int,
+     *         course_code: string,
+     *         course_name: string,
+     *         group_code: string,
+     *         day: string,
+     *         day_label: string,
+     *         starts_at: string,
+     *         ends_at: string
+     *     }>
+     * }>
      */
-    public function unavailableSectionIds(Collection $selectedSections, Collection $candidateSections): array
+    public function unavailableSectionReasons(Collection $selectedSections, Collection $candidateSections): array
     {
         $selectedSections = $selectedSections->filter()->values();
 
@@ -84,33 +96,76 @@ class ScheduleConflictDetector
             return [];
         }
 
+        $selectedSections->each->loadMissing(['schedules', 'course']);
+        $candidateSections->each->loadMissing(['schedules', 'course']);
+
         $selectedSectionIds = $selectedSections->pluck('id')->all();
-        $unavailable = [];
+        $reasons = [];
 
         foreach ($candidateSections as $candidate) {
             if (in_array($candidate->id, $selectedSectionIds, true)) {
                 continue;
             }
 
+            $conflictsWith = [];
+
             foreach ($selectedSections as $selected) {
                 if ($candidate->course_id === $selected->course_id) {
                     continue;
                 }
 
-                if ($this->sectionsOverlap($candidate, $selected)) {
-                    $unavailable[] = $candidate->id;
-                    break;
+                foreach ($this->overlapDetails($candidate, $selected) as $overlap) {
+                    $conflictsWith[] = [
+                        'section_id' => $selected->id,
+                        'course_code' => $selected->course->code,
+                        'course_name' => $selected->course->name,
+                        'group_code' => $selected->group_code,
+                        'day' => $overlap['day'],
+                        'day_label' => $overlap['day_label'],
+                        'starts_at' => $overlap['starts_at'],
+                        'ends_at' => $overlap['ends_at'],
+                    ];
                 }
+            }
+
+            if ($conflictsWith !== []) {
+                $reasons[] = [
+                    'section_id' => $candidate->id,
+                    'conflicts_with' => $conflictsWith,
+                ];
             }
         }
 
-        return array_values(array_unique($unavailable));
+        return $reasons;
+    }
+
+    /**
+     * @param  Collection<int, CourseSection>  $selectedSections
+     * @param  Collection<int, CourseSection>  $candidateSections
+     * @return list<int>
+     */
+    public function unavailableSectionIds(Collection $selectedSections, Collection $candidateSections): array
+    {
+        return array_column(
+            $this->unavailableSectionReasons($selectedSections, $candidateSections),
+            'section_id',
+        );
     }
 
     public function sectionsOverlap(CourseSection $sectionA, CourseSection $sectionB): bool
     {
+        return $this->overlapDetails($sectionA, $sectionB) !== [];
+    }
+
+    /**
+     * @return list<array{day: string, day_label: string, starts_at: string, ends_at: string}>
+     */
+    private function overlapDetails(CourseSection $sectionA, CourseSection $sectionB): array
+    {
         $sectionA->loadMissing('schedules');
         $sectionB->loadMissing('schedules');
+
+        $overlaps = [];
 
         foreach ($sectionA->schedules as $scheduleA) {
             foreach ($sectionB->schedules as $scheduleB) {
@@ -118,13 +173,20 @@ class ScheduleConflictDetector
                     continue;
                 }
 
-                if ($this->overlaps($scheduleA->starts_at, $scheduleA->ends_at, $scheduleB->starts_at, $scheduleB->ends_at)) {
-                    return true;
+                if (! $this->overlaps($scheduleA->starts_at, $scheduleA->ends_at, $scheduleB->starts_at, $scheduleB->ends_at)) {
+                    continue;
                 }
+
+                $overlaps[] = [
+                    'day' => $scheduleB->day->value,
+                    'day_label' => $scheduleB->day->label(),
+                    'starts_at' => substr($scheduleB->starts_at, 0, 5),
+                    'ends_at' => substr($scheduleB->ends_at, 0, 5),
+                ];
             }
         }
 
-        return false;
+        return $overlaps;
     }
 
     private function overlaps(string $startA, string $endA, string $startB, string $endB): bool

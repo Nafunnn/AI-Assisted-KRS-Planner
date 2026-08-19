@@ -36,6 +36,7 @@ function clonePlan(value: KrsPlan): KrsPlan {
         ...cloned,
         selected_course_ids: cloned.selected_course_ids ?? [],
         unavailable_section_ids: cloned.unavailable_section_ids ?? [],
+        unavailable_sections: cloned.unavailable_sections ?? [],
     };
 }
 
@@ -104,6 +105,10 @@ function deleteCurrentPlan(): void {
 
 async function addSection(sectionId: number): Promise<void> {
     if (plan.value.selected_section_ids.includes(sectionId)) {
+        return;
+    }
+
+    if (plan.value.unavailable_section_ids.includes(sectionId)) {
         return;
     }
 
@@ -310,7 +315,7 @@ async function downloadPng(): Promise<void> {
                     :key="course.id"
                     :course="course"
                     :selected-section-ids="plan.selected_section_ids"
-                    :unavailable-section-ids="plan.unavailable_section_ids ?? []"
+                    :unavailable-sections="plan.unavailable_sections ?? []"
                     @select="addSection"
                     @drag-start="isDragActive = true"
                     @drag-end="isDragActive = false"

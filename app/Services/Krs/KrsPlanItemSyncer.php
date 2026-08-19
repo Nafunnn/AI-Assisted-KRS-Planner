@@ -124,9 +124,9 @@ class KrsPlanItemSyncer
         $totalSks = $sections->unique(fn (CourseSection $s) => $s->course->code)
             ->sum(fn (CourseSection $s) => $s->course->sks);
 
-        $offering = $plan->courseOffering()->with('courses.sections')->first();
+        $offering = $plan->courseOffering()->with(['courses.sections.schedules', 'courses.sections.course'])->first();
         $allSections = $offering?->courses->flatMap(fn ($c) => $c->sections) ?? collect();
-        $unavailable = $this->conflictDetector->unavailableSectionIds($sections, $allSections);
+        $unavailable = $this->conflictDetector->unavailableSectionReasons($sections, $allSections);
 
         return [
             'plan_id' => $plan->id,
@@ -134,7 +134,8 @@ class KrsPlanItemSyncer
             'total_sks' => $totalSks,
             'has_conflicts' => $conflicts !== [],
             'conflicts' => $conflicts,
-            'unavailable_section_ids' => $unavailable,
+            'unavailable_section_ids' => array_column($unavailable, 'section_id'),
+            'unavailable_sections' => $unavailable,
             'section_ids' => $sectionIds,
             'items' => $sections->map(fn (CourseSection $s) => [
                 'code' => $s->course->code,

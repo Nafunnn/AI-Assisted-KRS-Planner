@@ -159,6 +159,9 @@ test('adding a section returns overlapping groups from other courses as unavaila
         ])
         ->assertSuccessful()
         ->assertJsonPath('plan.unavailable_section_ids', [$sectionB->id])
+        ->assertJsonPath('plan.unavailable_sections.0.section_id', $sectionB->id)
+        ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.section_id', $sectionA->id)
+        ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.group_code', $sectionA->group_code)
         ->assertJsonPath('plan.selected_course_ids', [$courseA->id]);
 });
 

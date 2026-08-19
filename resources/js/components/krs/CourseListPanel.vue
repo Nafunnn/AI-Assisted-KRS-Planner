@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { courseColorClass } from '@/lib/krs';
-import type { Course, CourseSection } from '@/types/krs';
+import type { Course, CourseSection, SectionConflict, UnavailableSection } from '@/types/krs';
 
-const { course, selectedSectionIds, unavailableSectionIds } = defineProps<{
+const { course, selectedSectionIds, unavailableSections } = defineProps<{
     course: Course;
     selectedSectionIds: number[];
-    unavailableSectionIds: number[];
+    unavailableSections: UnavailableSection[];
 }>();
 
 const emit = defineEmits<{
@@ -28,13 +28,15 @@ watch(isCourseSelected, (selected) => {
     }
 });
 
-const visibleSections = computed(() =>
-    course.sections.filter(
-        (section) =>
-            selectedSectionIds.includes(section.id) ||
-            !unavailableSectionIds.includes(section.id),
-    ),
-);
+const conflictsBySectionId = computed(() => {
+    const map = new Map<number, SectionConflict[]>();
+
+    for (const unavailable of unavailableSections) {
+        map.set(unavailable.section_id, unavailable.conflicts_with);
+    }
+
+    return map;
+});
 
 const selectedSection = computed(
     () =>
@@ -42,6 +44,14 @@ const selectedSection = computed(
             selectedSectionIds.includes(section.id),
         ) ?? null,
 );
+
+function conflictsFor(sectionId: number): SectionConflict[] {
+    return conflictsBySectionId.value.get(sectionId) ?? [];
+}
+
+function isUnavailable(sectionId: number): boolean {
+    return conflictsBySectionId.value.has(sectionId);
+}
 
 function scheduleLabel(section: CourseSection): string {
     if (section.schedules.length === 0) {
@@ -53,7 +63,17 @@ function scheduleLabel(section: CourseSection): string {
         .join(', ');
 }
 
+function conflictLabel(conflict: SectionConflict): string {
+    return `${conflict.course_code} ${conflict.group_code} (${conflict.day_label} ${conflict.starts_at}–${conflict.ends_at})`;
+}
+
 function onDragStart(event: DragEvent, sectionId: number): void {
+    if (isUnavailable(sectionId)) {
+        event.preventDefault();
+
+        return;
+    }
+
     didDrag.value = true;
     emit('dragStart');
 
@@ -74,7 +94,7 @@ function onDragEnd(): void {
 }
 
 function onSelect(sectionId: number): void {
-    if (didDrag.value) {
+    if (didDrag.value || isUnavailable(sectionId)) {
         return;
     }
 
@@ -83,7 +103,7 @@ function onSelect(sectionId: number): void {
 </script>
 
 <template>
-    <div v-if="visibleSections.length > 0 || isCourseSelected" class="rounded-lg border">
+    <div v-if="course.sections.length > 0" class="rounded-lg border">
         <button
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50"
@@ -112,23 +132,26 @@ function onSelect(sectionId: number): void {
                 {{
                     isCourseSelected
                         ? 'Terpilih'
-                        : `${visibleSections.length} kelompok`
+                        : `${course.sections.length} kelompok`
                 }}
             </span>
         </button>
 
         <div v-if="expanded" class="space-y-2 border-t p-2">
             <div
-                v-for="section in visibleSections"
+                v-for="section in course.sections"
                 :key="section.id"
-                draggable="true"
+                :draggable="!isUnavailable(section.id)"
                 role="button"
-                tabindex="0"
-                class="min-h-11 w-full cursor-grab rounded-md border px-3 py-2.5 text-left text-sm transition select-none active:cursor-grabbing hover:bg-muted/60"
+                :tabindex="isUnavailable(section.id) ? -1 : 0"
+                :aria-disabled="isUnavailable(section.id)"
+                class="min-h-11 w-full rounded-md border px-3 py-2.5 text-left text-sm transition select-none"
                 :class="
                     selectedSectionIds.includes(section.id)
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                        : ''
+                        ? 'cursor-grab border-primary bg-primary/5 ring-1 ring-primary/30 active:cursor-grabbing hover:bg-muted/60'
+                        : isUnavailable(section.id)
+                          ? 'cursor-not-allowed border-destructive/30 bg-destructive/5 opacity-80'
+                          : 'cursor-grab hover:bg-muted/60 active:cursor-grabbing'
                 "
                 @click="onSelect(section.id)"
                 @keydown.enter="onSelect(section.id)"
@@ -138,12 +161,30 @@ function onSelect(sectionId: number): void {
             >
                 <div class="flex items-center justify-between gap-2">
                     <span class="font-medium">{{ section.group_code }}</span>
-                    <span class="text-xs text-muted-foreground">
-                        {{ section.time_period_label }}
+                    <span
+                        class="text-xs"
+                        :class="
+                            isUnavailable(section.id)
+                                ? 'text-destructive'
+                                : 'text-muted-foreground'
+                        "
+                    >
+                        {{
+                            isUnavailable(section.id)
+                                ? 'Bentrok'
+                                : section.time_period_label
+                        }}
                     </span>
                 </div>
                 <p class="mt-1 text-xs text-muted-foreground">
                     {{ scheduleLabel(section) }}
+                </p>
+                <p
+                    v-for="(conflict, index) in conflictsFor(section.id)"
+                    :key="`${conflict.section_id}-${conflict.day}-${index}`"
+                    class="mt-1 text-xs text-destructive"
+                >
+                    Bentrok dengan {{ conflictLabel(conflict) }}
                 </p>
             </div>
         </div>

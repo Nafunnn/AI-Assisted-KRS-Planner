@@ -56,6 +56,22 @@ export type PlanItem = {
     };
 };
 
+export type SectionConflict = {
+    section_id: number;
+    course_code: string;
+    course_name: string;
+    group_code: string;
+    day: string;
+    day_label: string;
+    starts_at: string;
+    ends_at: string;
+};
+
+export type UnavailableSection = {
+    section_id: number;
+    conflicts_with: SectionConflict[];
+};
+
 export type KrsPlan = {
     id: number;
     name: string;
@@ -64,6 +80,7 @@ export type KrsPlan = {
     selected_section_ids: number[];
     selected_course_ids: number[];
     unavailable_section_ids: number[];
+    unavailable_sections: UnavailableSection[];
     course_count: number;
     has_conflicts: boolean;
     conflict_section_ids: number[];
