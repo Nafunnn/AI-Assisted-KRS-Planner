@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\CourseOfferingFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,10 +13,13 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $user_id
+ * @property int|null $uploaded_by_user_id
  * @property string $title
+ * @property string $term
  * @property string $source_filename
+ * @property int $catalog_version
  * @property Carbon $imported_at
+ * @property Carbon|null $published_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -28,10 +32,13 @@ class CourseOffering extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
+        'uploaded_by_user_id',
         'title',
+        'term',
         'source_filename',
+        'catalog_version',
         'imported_at',
+        'published_at',
     ];
 
     /**
@@ -41,15 +48,17 @@ class CourseOffering extends Model
     {
         return [
             'imported_at' => 'datetime',
+            'published_at' => 'datetime',
+            'catalog_version' => 'integer',
         ];
     }
 
     /**
      * @return BelongsTo<User, $this>
      */
-    public function user(): BelongsTo
+    public function uploadedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'uploaded_by_user_id');
     }
 
     /**
@@ -76,9 +85,23 @@ class CourseOffering extends Model
         return $this->hasOne(KrsPlan::class)->latestOfMany();
     }
 
-    public function nextPlanName(): string
+    /**
+     * @param  Builder<CourseOffering>  $query
+     * @return Builder<CourseOffering>
+     */
+    public function scopePublished(Builder $query): Builder
     {
-        $count = $this->krsPlans()->count();
+        return $query->whereNotNull('published_at');
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_at !== null;
+    }
+
+    public function nextPlanNameFor(User $user): string
+    {
+        $count = $this->krsPlans()->where('user_id', $user->id)->count();
 
         return $count === 0 ? 'Rencana KRS' : 'Rencana KRS '.($count + 1);
     }

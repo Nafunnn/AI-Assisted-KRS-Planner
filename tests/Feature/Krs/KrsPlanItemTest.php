@@ -11,7 +11,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('user can add non conflicting section to plan', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $courseA = Course::factory()->for($offering)->create();
@@ -51,7 +51,7 @@ test('user can add non conflicting section to plan', function () {
 
 test('adding conflicting section is rejected', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $courseA = Course::factory()->for($offering)->create();
@@ -90,7 +90,7 @@ test('adding conflicting section is rejected', function () {
 
 test('adding section replaces existing section for same course', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $course = Course::factory()->for($offering)->create();
@@ -131,7 +131,7 @@ test('adding section replaces existing section for same course', function () {
 
 test('adding a section returns overlapping groups from other courses as unavailable', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $courseA = Course::factory()->for($offering)->create();
@@ -161,13 +161,15 @@ test('adding a section returns overlapping groups from other courses as unavaila
         ->assertJsonPath('plan.unavailable_section_ids', [$sectionB->id])
         ->assertJsonPath('plan.unavailable_sections.0.section_id', $sectionB->id)
         ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.section_id', $sectionA->id)
+        ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.course_code', $courseA->code)
+        ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.course_name', $courseA->name)
         ->assertJsonPath('plan.unavailable_sections.0.conflicts_with.0.group_code', $sectionA->group_code)
         ->assertJsonPath('plan.selected_course_ids', [$courseA->id]);
 });
 
 test('planner grid covers 07:00 to 21:00', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $this->actingAs($user)
@@ -182,7 +184,7 @@ test('planner grid covers 07:00 to 21:00', function () {
 
 test('planner can refresh calendar with a partial reload of plan data', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $this->actingAs($user)

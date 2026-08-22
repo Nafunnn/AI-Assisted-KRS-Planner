@@ -10,7 +10,7 @@ return [
     'description' => 'Mata kuliah dalam satu penawaran semester. Identitas unik per penawaran adalah kode (code). Setiap mata kuliah punya SKS, jenis kelas (Teori/Praktikum), dan satu atau lebih kelompok (course_section) yang bisa dipilih di KRS.',
     'policy' => CourseOfferingPolicy::class,
     'permission_action' => 'list',
-    'scope' => 'offering_owner',
+    'scope' => 'published_offering',
     'searchable' => ['code', 'name'],
     'filterable' => ['id', 'course_offering_id', 'code', 'name', 'sks', 'class_type'],
     'sortable' => ['code', 'name', 'sks', 'class_type', 'created_at'],

@@ -126,6 +126,7 @@ test('unavailable section reasons name the selected group that overlaps', functi
     expect($reasons)->toHaveCount(1)
         ->and($reasons[0]['section_id'])->toBe($overlapping->id)
         ->and($reasons[0]['conflicts_with'][0]['course_code'])->toBe('A11.54001')
+        ->and($reasons[0]['conflicts_with'][0]['course_name'])->toBe('Algoritma')
         ->and($reasons[0]['conflicts_with'][0]['group_code'])->toBe('A11.54001')
         ->and($reasons[0]['conflicts_with'][0]['day_label'])->toBe('Senin')
         ->and($reasons[0]['conflicts_with'][0]['starts_at'])->toBe('07:00')

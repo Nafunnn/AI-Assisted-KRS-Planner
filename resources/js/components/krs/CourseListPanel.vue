@@ -15,8 +15,15 @@ const emit = defineEmits<{
     dragEnd: [];
 }>();
 
+const visibleSections = computed(() =>
+    course.sections.filter(
+        (section) =>
+            !section.deprecated_at || selectedSectionIds.includes(section.id),
+    ),
+);
+
 const isCourseSelected = computed(() =>
-    course.sections.some((section) => selectedSectionIds.includes(section.id)),
+    visibleSections.value.some((section) => selectedSectionIds.includes(section.id)),
 );
 
 const expanded = ref(!isCourseSelected.value);
@@ -64,7 +71,7 @@ function scheduleLabel(section: CourseSection): string {
 }
 
 function conflictLabel(conflict: SectionConflict): string {
-    return `${conflict.course_code} ${conflict.group_code} (${conflict.day_label} ${conflict.starts_at}–${conflict.ends_at})`;
+    return `${conflict.course_code} ${conflict.course_name} · ${conflict.group_code} (${conflict.day_label} ${conflict.starts_at}–${conflict.ends_at})`;
 }
 
 function onDragStart(event: DragEvent, sectionId: number): void {
@@ -94,7 +101,9 @@ function onDragEnd(): void {
 }
 
 function onSelect(sectionId: number): void {
-    if (didDrag.value || isUnavailable(sectionId)) {
+    const section = course.sections.find((item) => item.id === sectionId);
+
+    if (didDrag.value || isUnavailable(sectionId) || section?.deprecated_at) {
         return;
     }
 
@@ -103,7 +112,7 @@ function onSelect(sectionId: number): void {
 </script>
 
 <template>
-    <div v-if="course.sections.length > 0" class="rounded-lg border">
+    <div v-if="visibleSections.length > 0" class="rounded-lg border">
         <button
             type="button"
             class="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50"
@@ -132,24 +141,24 @@ function onSelect(sectionId: number): void {
                 {{
                     isCourseSelected
                         ? 'Terpilih'
-                        : `${course.sections.length} kelompok`
+                        : `${visibleSections.length} kelompok`
                 }}
             </span>
         </button>
 
         <div v-if="expanded" class="space-y-2 border-t p-2">
             <div
-                v-for="section in course.sections"
+                v-for="section in visibleSections"
                 :key="section.id"
-                :draggable="!isUnavailable(section.id)"
+                :draggable="!isUnavailable(section.id) && !section.deprecated_at"
                 role="button"
-                :tabindex="isUnavailable(section.id) ? -1 : 0"
-                :aria-disabled="isUnavailable(section.id)"
+                :tabindex="isUnavailable(section.id) || section.deprecated_at ? -1 : 0"
+                :aria-disabled="isUnavailable(section.id) || Boolean(section.deprecated_at)"
                 class="min-h-11 w-full rounded-md border px-3 py-2.5 text-left text-sm transition select-none"
                 :class="
                     selectedSectionIds.includes(section.id)
                         ? 'cursor-grab border-primary bg-primary/5 ring-1 ring-primary/30 active:cursor-grabbing hover:bg-muted/60'
-                        : isUnavailable(section.id)
+                        : isUnavailable(section.id) || section.deprecated_at
                           ? 'cursor-not-allowed border-destructive/30 bg-destructive/5 opacity-80'
                           : 'cursor-grab hover:bg-muted/60 active:cursor-grabbing'
                 "
@@ -164,15 +173,17 @@ function onSelect(sectionId: number): void {
                     <span
                         class="text-xs"
                         :class="
-                            isUnavailable(section.id)
+                            isUnavailable(section.id) || section.deprecated_at
                                 ? 'text-destructive'
                                 : 'text-muted-foreground'
                         "
                     >
                         {{
-                            isUnavailable(section.id)
-                                ? 'Bentrok'
-                                : section.time_period_label
+                            section.deprecated_at
+                                ? 'Dihapus dari katalog'
+                                : isUnavailable(section.id)
+                                  ? 'Bentrok'
+                                  : section.time_period_label
                         }}
                     </span>
                 </div>

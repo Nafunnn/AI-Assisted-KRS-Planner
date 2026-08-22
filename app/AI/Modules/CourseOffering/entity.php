@@ -7,17 +7,16 @@ return [
     'key' => 'course_offering',
     'name' => 'Penawaran Mata Kuliah',
     'model' => CourseOffering::class,
-    'description' => 'Katalog semester mata kuliah yang diimpor user dari file Excel. Satu penawaran berisi banyak mata kuliah (course), masing-masing punya beberapa kelompok (course_section) beserta jadwal. Semua rencana KRS (krs_plan) terikat ke satu penawaran.',
+    'description' => 'Katalog semester bersama yang diunggah admin. Satu penawaran berisi banyak mata kuliah (course), masing-masing punya beberapa kelompok (course_section) beserta jadwal. Semua rencana KRS (krs_plan) mahasiswa terikat ke satu katalog.',
     'policy' => CourseOfferingPolicy::class,
     'permission_action' => 'list',
-    'scope' => 'owner',
-    'scope_field' => 'user_id',
-    'searchable' => ['title', 'source_filename'],
-    'filterable' => ['id', 'user_id', 'title', 'source_filename'],
-    'sortable' => ['title', 'imported_at', 'created_at', 'updated_at'],
+    'scope' => 'published_catalog',
+    'searchable' => ['title', 'source_filename', 'term'],
+    'filterable' => ['id', 'title', 'term', 'source_filename', 'catalog_version'],
+    'sortable' => ['title', 'term', 'imported_at', 'published_at', 'created_at', 'updated_at'],
     'aggregates' => ['count'],
     'relations' => [
-        'user' => 'user',
+        'uploadedBy' => 'user',
         'courses' => 'course',
         'krsPlans' => 'krs_plan',
         'latestPlan' => 'krs_plan',
@@ -29,16 +28,21 @@ return [
             'label' => 'ID',
             'description' => 'Primary key penawaran.',
         ],
-        'user_id' => [
+        'uploaded_by_user_id' => [
             'type' => 'integer',
-            'label' => 'Pemilik',
-            'description' => 'User yang mengimpor penawaran ini.',
+            'label' => 'Diunggah Oleh',
+            'description' => 'Admin yang terakhir mengunggah/sync katalog.',
         ],
         'title' => [
             'type' => 'string',
             'label' => 'Judul',
-            'description' => 'Nama penawaran semester, biasanya dari judul impor Excel.',
+            'description' => 'Nama katalog semester.',
             'example' => 'KRS Semester Genap 2025/2026',
+        ],
+        'term' => [
+            'type' => 'string',
+            'label' => 'Semester',
+            'description' => 'Kode term, misalnya 2025/2026-genap.',
         ],
         'source_filename' => [
             'type' => 'string',
@@ -46,10 +50,18 @@ return [
             'description' => 'Nama file Excel asli yang diimpor.',
             'example' => 'penawaran_mk.xlsx',
         ],
+        'catalog_version' => [
+            'type' => 'integer',
+            'label' => 'Versi Katalog',
+        ],
         'imported_at' => [
             'type' => 'datetime',
             'label' => 'Diimpor Pada',
-            'description' => 'Waktu impor Excel terakhir.',
+            'description' => 'Waktu impor/sync Excel terakhir.',
+        ],
+        'published_at' => [
+            'type' => 'datetime',
+            'label' => 'Dipublish Pada',
         ],
         'created_at' => [
             'type' => 'datetime',
@@ -61,9 +73,9 @@ return [
         ],
     ],
     'business_rules' => [
-        'User hanya melihat penawaran miliknya sendiri (scope owner).',
-        'Satu user dapat punya banyak penawaran untuk semester berbeda.',
-        'Menghapus penawaran akan memengaruhi course, section, dan rencana terkait.',
+        'Mahasiswa hanya melihat katalog yang sudah dipublish.',
+        'Admin dapat melihat semua katalog termasuk unpublished.',
+        'Hanya admin yang boleh membuat atau sync katalog.',
     ],
     'query_hints' => [
         'Gunakan with=["courses","krsPlans"] untuk ringkasan isi penawaran.',

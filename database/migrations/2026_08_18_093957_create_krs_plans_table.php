@@ -14,9 +14,10 @@ return new class extends Migration
             $table->foreignId('course_offering_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('status')->default('draft');
+            $table->boolean('is_shared_with_friends')->default(false);
             $table->timestamps();
 
-            $table->unique(['user_id', 'course_offering_id']);
+            $table->index(['user_id', 'course_offering_id']);
         });
     }
 

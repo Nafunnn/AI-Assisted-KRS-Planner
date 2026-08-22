@@ -10,13 +10,17 @@ return new class extends Migration
     {
         Schema::create('course_offerings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('uploaded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('title');
+            $table->string('term');
             $table->string('source_filename');
+            $table->unsignedInteger('catalog_version')->default(1);
             $table->timestamp('imported_at');
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
 
-            $table->index(['user_id', 'imported_at']);
+            $table->index('published_at');
+            $table->index('term');
         });
     }
 

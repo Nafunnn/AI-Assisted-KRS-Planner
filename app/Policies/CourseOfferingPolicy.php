@@ -14,21 +14,26 @@ class CourseOfferingPolicy
 
     public function view(User $user, CourseOffering $courseOffering): bool
     {
-        return $user->id === $courseOffering->user_id;
+        return $user->isAdmin() || $courseOffering->isPublished();
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->isAdmin();
     }
 
     public function update(User $user, CourseOffering $courseOffering): bool
     {
-        return $user->id === $courseOffering->user_id;
+        return $user->isAdmin();
+    }
+
+    public function sync(User $user, CourseOffering $courseOffering): bool
+    {
+        return $user->isAdmin();
     }
 
     public function delete(User $user, CourseOffering $courseOffering): bool
     {
-        return $user->id === $courseOffering->user_id;
+        return $user->isAdmin();
     }
 }

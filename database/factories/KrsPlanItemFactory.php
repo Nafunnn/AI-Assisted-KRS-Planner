@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\KrsPlanItemStatus;
 use App\Models\CourseSection;
 use App\Models\KrsPlan;
 use App\Models\KrsPlanItem;
@@ -20,6 +21,8 @@ class KrsPlanItemFactory extends Factory
         return [
             'krs_plan_id' => KrsPlan::factory(),
             'course_section_id' => CourseSection::factory(),
+            'status' => KrsPlanItemStatus::Active,
+            'schedule_fingerprint' => null,
         ];
     }
 }

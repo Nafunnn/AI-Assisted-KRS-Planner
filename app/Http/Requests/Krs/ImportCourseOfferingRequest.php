@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Krs;
 
+use App\Models\CourseOffering;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImportCourseOfferingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->can('create', CourseOffering::class) ?? false;
     }
 
     /**
@@ -19,6 +20,7 @@ class ImportCourseOfferingRequest extends FormRequest
         return [
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
             'title' => ['nullable', 'string', 'max:255'],
+            'term' => ['nullable', 'string', 'max:100'],
         ];
     }
 

@@ -13,9 +13,11 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->string('group_code');
             $table->string('time_period', 2);
+            $table->timestamp('deprecated_at')->nullable();
             $table->timestamps();
 
             $table->unique(['course_id', 'group_code']);
+            $table->index('deprecated_at');
         });
     }
 

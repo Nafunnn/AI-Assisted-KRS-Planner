@@ -10,7 +10,7 @@ return [
     'description' => 'Slot jadwal kuliah untuk satu kelompok (course_section). Satu kelompok bisa punya beberapa slot (mis. Senin 08-10 dan Rabu 13-15). Field day, starts_at, ends_at dipakai deteksi bentrok; raw menyimpan teks jadwal asli dari Excel.',
     'policy' => CourseOfferingPolicy::class,
     'permission_action' => 'list',
-    'scope' => 'section_owner',
+    'scope' => 'published_section',
     'searchable' => ['raw'],
     'filterable' => ['id', 'course_section_id', 'slot_number', 'day', 'starts_at', 'ends_at'],
     'sortable' => ['slot_number', 'day', 'starts_at', 'ends_at'],

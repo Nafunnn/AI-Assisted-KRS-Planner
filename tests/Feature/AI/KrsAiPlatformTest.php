@@ -48,7 +48,7 @@ test('ai chat returns unavailable without active provider', function () {
 
 test('detect plan conflicts tool summarizes plan via syncer', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $course = Course::factory()->for($offering)->create(['sks' => 3]);
     $section = CourseSection::factory()->for($course)->create();
     SectionSchedule::factory()->for($section)->create([
@@ -69,7 +69,7 @@ test('detect plan conflicts tool summarizes plan via syncer', function () {
 
 test('schedule generator produces conflict free preview', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $courseA = Course::factory()->for($offering)->create(['code' => 'MKA', 'sks' => 3]);
     $courseB = Course::factory()->for($offering)->create(['code' => 'MKB', 'sks' => 2]);
     $sectionA = CourseSection::factory()->for($courseA)->create();

@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $course_offering_id
  * @property string $name
  * @property KrsPlanStatus $status
+ * @property bool $is_shared_with_friends
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -32,6 +33,7 @@ class KrsPlan extends Model
         'course_offering_id',
         'name',
         'status',
+        'is_shared_with_friends',
     ];
 
     /**
@@ -41,6 +43,7 @@ class KrsPlan extends Model
     {
         return [
             'status' => KrsPlanStatus::class,
+            'is_shared_with_friends' => 'boolean',
         ];
     }
 

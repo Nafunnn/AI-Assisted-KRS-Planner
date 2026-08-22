@@ -1,11 +1,12 @@
 <?php
 
-use App\Models\CourseOffering;
 use App\Models\KrsPlan;
 use App\Models\User;
+use App\Services\Krs\CourseOfferingImportService;
 use Illuminate\Http\UploadedFile;
 
 test('user can export krs plan as pdf', function () {
+    $admin = User::factory()->admin()->create();
     $user = User::factory()->create();
 
     $file = new UploadedFile(
@@ -16,13 +17,10 @@ test('user can export krs plan as pdf', function () {
         true,
     );
 
-    $this->actingAs($user)
-        ->post(route('krs.offerings.store'), [
-            'file' => $file,
-            'title' => 'Semester 5',
-        ]);
+    $offering = app(CourseOfferingImportService::class)
+        ->create($admin, $file, 'Semester 5', '2025/2026-gasal')['offering'];
 
-    $plan = KrsPlan::query()->where('user_id', $user->id)->firstOrFail();
+    $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $response = $this->actingAs($user)
         ->get(route('krs.plans.export.pdf', $plan));
@@ -31,7 +29,8 @@ test('user can export krs plan as pdf', function () {
     $response->assertHeader('content-type', 'application/pdf');
 });
 
-test('end to end import planner and export flow', function () {
+test('end to end published catalog planner and export flow', function () {
+    $admin = User::factory()->admin()->create();
     $user = User::factory()->create();
 
     $file = new UploadedFile(
@@ -42,15 +41,14 @@ test('end to end import planner and export flow', function () {
         true,
     );
 
+    $offering = app(CourseOfferingImportService::class)
+        ->create($admin, $file, 'Semester 5 E2E', '2025/2026-gasal')['offering'];
+
     $this->actingAs($user)
-        ->post(route('krs.offerings.store'), [
-            'file' => $file,
-            'title' => 'Semester 5 E2E',
-        ])
+        ->get(route('krs.planner.latest', $offering))
         ->assertRedirect();
 
-    $offering = CourseOffering::query()->where('user_id', $user->id)->firstOrFail();
-    $plan = $offering->krsPlans()->first();
+    $plan = KrsPlan::query()->where('user_id', $user->id)->where('course_offering_id', $offering->id)->firstOrFail();
 
     $this->actingAs($user)
         ->get(route('krs.index'))

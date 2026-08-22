@@ -4,10 +4,12 @@ Aplikasi web untuk menyusun **Kartu Rencana Studi (KRS)** dari file Excel penawa
 
 ## Fitur
 
-- **Import penawaran** dari Excel (`.xlsx` / `.xls`) sesuai template kampus
+- **Katalog bersama** diunggah admin (Excel penawaran); mahasiswa menyusun rencana di atas katalog yang sama
+- **Sync katalog aman**: update Excel mempertahankan identitas kelompok; rencana terdampak ditandai stale
 - **Planner visual** dengan kalender mingguan, daftar mata kuliah, dan ringkasan SKS
 - **Deteksi bentrok** otomatis antar kelompok yang dipilih
-- **Beberapa rencana** per penawaran (draft / final)
+- **Beberapa rencana** per katalog (draft / final)
+- **Teman**: permintaan teman, bagikan rencana view-only, salin ke rencana sendiri
 - **Asisten AI** untuk cek konflik, usulkan kelompok, dan generate jadwal (min/max SKS, hari libur, batas jam)
 - **Ekspor** rencana ke PDF atau PNG
 - **Akun** dengan registrasi, verifikasi email, reset password, 2FA, dan passkey
@@ -70,9 +72,10 @@ php artisan db:seed
 ```
 
 
-| Email              | Password   |
-| ------------------ | ---------- |
-| `test@example.com` | `password` |
+| Email              | Password   | Peran      |
+| ------------------ | ---------- | ---------- |
+| `admin@example.com` | `password` | Admin katalog |
+| `test@example.com` | `password` | Mahasiswa |
 
 
 
@@ -147,14 +150,15 @@ Logika jadwal tetap di server (deteksi konflik, generate, sinkronisasi kelompok)
 
 ## Alur pemakaian
 
-1. Daftar / masuk, lalu buka **KRS Planner**
-2. Import file Excel penawaran
-3. Pilih kelompok di daftar mata kuliah; kalender dan ringkasan SKS ikut berubah
+1. Admin masuk, buka **Kelola Katalog**, import Excel penawaran (langsung published)
+2. Mahasiswa daftar / masuk, lalu buka **KRS Planner** — katalog published muncul untuk semua
+3. Mulai rencana, pilih kelompok di daftar mata kuliah; kalender dan ringkasan SKS ikut berubah
 4. Buat rencana cadangan jika ingin membandingkan opsi
-5. Pakai asisten AI jika perlu saran atau generate otomatis
-6. Ekspor PDF atau PNG jika jadwal sudah aman (tanpa bentrok)
+5. Opsional: tambah **Teman**, bagikan rencana, atau salin rencana teman
+6. Pakai asisten AI jika perlu saran atau generate otomatis
+7. Ekspor PDF atau PNG jika jadwal sudah aman (tanpa bentrok)
 
-Data penawaran dan rencana bersifat milik pengguna yang mengimpornya. Pengguna lain tidak bisa melihat atau mengubahnya.
+Katalog milik admin (bersama). Rencana KRS milik masing-masing mahasiswa. Admin boleh sync Excel ulang; kelompok yang match `(kode MK, T/P, kelompok)` mempertahankan ID; item rencana yang jadwalnya berubah atau kelompoknya hilang ditandai stale.
 
 ## Perintah berguna
 
@@ -187,9 +191,11 @@ Rute utama (setelah login dan verifikasi email):
 
 | Path                             | Fungsi                       |
 | -------------------------------- | ---------------------------- |
-| `/krs`                           | Daftar penawaran dan rencana |
+| `/krs`                           | Daftar katalog dan rencana   |
+| `/krs/admin/offerings`           | Kelola katalog (admin)       |
 | `/krs/planner/{offering}/{plan}` | Planner jadwal               |
 | `/krs/plans/{plan}/export/pdf`   | Unduh PDF                    |
+| `/friends`                       | Teman dan rencana dibagikan  |
 | `/settings/ai-providers`         | Konfigurasi provider AI      |
 
 

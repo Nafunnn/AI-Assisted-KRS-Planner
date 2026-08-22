@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, useHttp } from '@inertiajs/vue3';
 import { RefreshCw } from '@lucide/vue';
-import { ref, toRaw, watch } from 'vue';
+import { computed, ref, toRaw, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import {
     destroy as destroyPlan,
@@ -54,6 +54,8 @@ const props = defineProps<{
     plan: KrsPlan;
     plans: PlanSummary[];
     gridConfig: GridConfig;
+    readOnly?: boolean;
+    owner?: { id: number; name: string };
 }>();
 
 const plan = ref<KrsPlan>(clonePlan(props.plan));
@@ -64,6 +66,7 @@ const isDragActive = ref(false);
 const renameOpen = ref(false);
 const aiOpen = ref(false);
 const mobilePane = ref<'calendar' | 'courses'>('calendar');
+const readOnly = computed(() => props.readOnly === true);
 const http = useHttp({
     course_section_id: 0,
     action: 'add' as 'add' | 'remove',
@@ -104,6 +107,10 @@ function deleteCurrentPlan(): void {
 }
 
 async function addSection(sectionId: number): Promise<void> {
+    if (readOnly.value) {
+        return;
+    }
+
     if (plan.value.selected_section_ids.includes(sectionId)) {
         return;
     }
@@ -120,9 +127,30 @@ async function addSection(sectionId: number): Promise<void> {
 }
 
 async function toggleSection(sectionId: number): Promise<void> {
+    if (readOnly.value) {
+        return;
+    }
+
     const isSelected = plan.value.selected_section_ids.includes(sectionId);
 
     await submitSection(sectionId, isSelected ? 'remove' : 'add');
+}
+
+function toggleShare(): void {
+    const sharing = !plan.value.is_shared_with_friends;
+
+    router.patch(updatePlan.url(plan.value.id), {
+        is_shared_with_friends: sharing,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(
+                sharing
+                    ? 'Rencana dibagikan ke teman.'
+                    : 'Rencana tidak lagi dibagikan.',
+            );
+        },
+    });
 }
 
 async function submitSection(
@@ -202,15 +230,33 @@ async function downloadPng(): Promise<void> {
             <div class="min-w-0">
                 <h1 class="text-xl font-semibold break-words">{{ offering.title }}</h1>
                 <p class="text-sm text-muted-foreground">
-                    Tap kelompok untuk menambah, atau drag ke kalender di layar besar
+                    <template v-if="readOnly">
+                        Lihat saja · rencana {{ owner?.name }}
+                    </template>
+                    <template v-else>
+                        Tap kelompok untuk menambah, atau drag ke kalender di layar besar
+                    </template>
                 </p>
             </div>
             <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <Button variant="outline" class="min-h-11 sm:min-h-9" as-child>
                     <Link :href="krsIndex()">Kembali</Link>
                 </Button>
-                <Button variant="outline" class="min-h-11 sm:min-h-9" @click="aiOpen = true">
+                <Button
+                    v-if="!readOnly"
+                    variant="outline"
+                    class="min-h-11 sm:min-h-9"
+                    @click="aiOpen = true"
+                >
                     AI Assistant
+                </Button>
+                <Button
+                    v-if="!readOnly"
+                    variant="outline"
+                    class="min-h-11 sm:min-h-9"
+                    @click="toggleShare"
+                >
+                    {{ plan.is_shared_with_friends ? 'Batalkan bagikan' : 'Bagikan ke teman' }}
                 </Button>
                 <Button variant="outline" class="min-h-11 sm:min-h-9" @click="downloadPdf">
                     Export PDF
@@ -226,7 +272,16 @@ async function downloadPng(): Promise<void> {
             </div>
         </div>
 
-        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+        <div
+            v-if="plan.has_stale_items"
+            class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+            Katalog diperbarui:
+            {{ plan.stale_items_count }} mata kuliah di rencana ini terdampak
+            (jadwal berubah atau kelompok dihapus). Review dan ganti kelompok jika perlu.
+        </div>
+
+        <div v-if="!readOnly" class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
             <div class="grid min-w-0 flex-1 gap-1">
                 <Label for="plan-switcher" class="text-xs text-muted-foreground">
                     Rencana
@@ -341,13 +396,14 @@ async function downloadPng(): Promise<void> {
         </div>
 
         <AiAssistantPanel
+            v-if="!readOnly"
             v-model:open="aiOpen"
             :plan-id="plan.id"
             :offering-id="offering.id"
             @plan-updated="refreshPlanFromServer()"
         />
 
-        <Dialog v-model:open="renameOpen">
+        <Dialog v-if="!readOnly" v-model:open="renameOpen">
             <DialogContent>
                 <Form
                     v-bind="updatePlan.form(plan.id)"

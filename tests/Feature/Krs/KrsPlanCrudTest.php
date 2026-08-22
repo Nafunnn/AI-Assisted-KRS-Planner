@@ -9,7 +9,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('user can create multiple plans for the same offering', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana KRS']);
 
     $this->actingAs($user)
@@ -18,13 +18,13 @@ test('user can create multiple plans for the same offering', function () {
         ])
         ->assertRedirect();
 
-    expect($offering->krsPlans()->count())->toBe(2)
-        ->and($offering->krsPlans()->latest('id')->first()?->name)->toBe('Alternatif pagi');
+    expect($offering->krsPlans()->where('user_id', $user->id)->count())->toBe(2)
+        ->and($offering->krsPlans()->where('user_id', $user->id)->latest('id')->first()?->name)->toBe('Alternatif pagi');
 });
 
 test('plans on the same offering keep independent selected sections', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $planA = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana A']);
     $planB = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana B']);
     $course = Course::factory()->for($offering)->create();
@@ -43,7 +43,7 @@ test('plans on the same offering keep independent selected sections', function (
 
 test('user cannot delete the last remaining plan', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $this->actingAs($user)
@@ -56,7 +56,7 @@ test('user cannot delete the last remaining plan', function () {
 
 test('user can delete a plan when another remains', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $planA = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana A']);
     $planB = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana B']);
 
@@ -68,21 +68,33 @@ test('user can delete a plan when another remains', function () {
     $this->assertModelExists($planA);
 });
 
-test('user cannot create a plan on another users offering', function () {
-    $owner = User::factory()->create();
-    $other = User::factory()->create();
-    $offering = CourseOffering::factory()->for($owner)->create();
+test('student can create a plan on shared published offering', function () {
+    $student = User::factory()->create();
+    $offering = CourseOffering::factory()->create();
 
-    $this->actingAs($other)
+    $this->actingAs($student)
+        ->post(route('krs.plans.store', $offering))
+        ->assertRedirect();
+
+    expect($offering->krsPlans()->where('user_id', $student->id)->count())->toBe(1);
+});
+
+test('student cannot create a plan on unpublished offering', function () {
+    $student = User::factory()->create();
+    $offering = CourseOffering::factory()->unpublished()->create();
+
+    $this->actingAs($student)
         ->post(route('krs.plans.store', $offering))
         ->assertForbidden();
 });
 
-test('planner latest redirects to the newest plan', function () {
+test('planner latest redirects to the newest plan for current user', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $other = User::factory()->create();
+    $offering = CourseOffering::factory()->create();
     KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Lama']);
     $newest = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Baru']);
+    KrsPlan::factory()->for($other)->for($offering)->create(['name' => 'Milik orang lain']);
 
     $this->actingAs($user)
         ->get(route('krs.planner.latest', $offering))
@@ -91,8 +103,8 @@ test('planner latest redirects to the newest plan', function () {
 
 test('planner returns not found when plan does not belong to offering', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
-    $otherOffering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
+    $otherOffering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create();
 
     $this->actingAs($user)
@@ -102,7 +114,7 @@ test('planner returns not found when plan does not belong to offering', function
 
 test('user can rename a plan', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $offering = CourseOffering::factory()->create();
     $plan = KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana KRS']);
 
     $this->actingAs($user)
@@ -114,11 +126,13 @@ test('user can rename a plan', function () {
     expect($plan->fresh()->name)->toBe('Kelas pagi');
 });
 
-test('krs index lists all plans for an offering', function () {
+test('krs index lists only current user plans for an offering', function () {
     $user = User::factory()->create();
-    $offering = CourseOffering::factory()->for($user)->create();
+    $other = User::factory()->create();
+    $offering = CourseOffering::factory()->create();
     KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Rencana KRS']);
     KrsPlan::factory()->for($user)->for($offering)->create(['name' => 'Alternatif']);
+    KrsPlan::factory()->for($other)->for($offering)->create(['name' => 'Rencana orang lain']);
 
     $this->actingAs($user)
         ->get(route('krs.index'))

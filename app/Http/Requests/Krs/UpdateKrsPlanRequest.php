@@ -21,7 +21,8 @@ class UpdateKrsPlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'is_shared_with_friends' => ['sometimes', 'boolean'],
         ];
     }
 

@@ -193,9 +193,18 @@ class EntityQueryService
     {
         match ($entity->scope) {
             'owner' => $query->where($entity->scopeField ?? 'user_id', $user->id),
-            'offering_owner' => $query->whereHas('courseOffering', fn (Builder $q) => $q->where('user_id', $user->id)),
-            'course_owner' => $query->whereHas('course.courseOffering', fn (Builder $q) => $q->where('user_id', $user->id)),
-            'section_owner' => $query->whereHas('courseSection.course.courseOffering', fn (Builder $q) => $q->where('user_id', $user->id)),
+            'published_catalog' => $user->isAdmin()
+                ? null
+                : $query->whereNotNull('published_at'),
+            'published_offering' => $user->isAdmin()
+                ? null
+                : $query->whereHas('courseOffering', fn (Builder $q) => $q->whereNotNull('published_at')),
+            'published_course' => $user->isAdmin()
+                ? null
+                : $query->whereHas('course.courseOffering', fn (Builder $q) => $q->whereNotNull('published_at')),
+            'published_section' => $user->isAdmin()
+                ? null
+                : $query->whereHas('courseSection.course.courseOffering', fn (Builder $q) => $q->whereNotNull('published_at')),
             'plan_owner' => $query->whereHas('krsPlan', fn (Builder $q) => $q->where('user_id', $user->id)),
             default => null,
         };

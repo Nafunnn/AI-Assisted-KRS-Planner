@@ -158,9 +158,19 @@ class ScheduleConflictDetector
     }
 
     /**
-     * @return list<array{day: string, day_label: string, starts_at: string, ends_at: string}>
+     * @return list<array{
+     *     day: string,
+     *     day_label: string,
+     *     a_starts_at: string,
+     *     a_ends_at: string,
+     *     b_starts_at: string,
+     *     b_ends_at: string,
+     *     overlap_starts_at: string,
+     *     overlap_ends_at: string,
+     *     overlap_minutes: int
+     * }>
      */
-    private function overlapDetails(CourseSection $sectionA, CourseSection $sectionB): array
+    public function detailedOverlaps(CourseSection $sectionA, CourseSection $sectionB): array
     {
         $sectionA->loadMissing('schedules');
         $sectionB->loadMissing('schedules');
@@ -177,16 +187,45 @@ class ScheduleConflictDetector
                     continue;
                 }
 
+                $overlapStart = $this->maxTime($scheduleA->starts_at, $scheduleB->starts_at);
+                $overlapEnd = $this->minTime($scheduleA->ends_at, $scheduleB->ends_at);
+
                 $overlaps[] = [
-                    'day' => $scheduleB->day->value,
-                    'day_label' => $scheduleB->day->label(),
-                    'starts_at' => substr($scheduleB->starts_at, 0, 5),
-                    'ends_at' => substr($scheduleB->ends_at, 0, 5),
+                    'day' => $scheduleA->day->value,
+                    'day_label' => $scheduleA->day->label(),
+                    'a_starts_at' => substr((string) $scheduleA->starts_at, 0, 5),
+                    'a_ends_at' => substr((string) $scheduleA->ends_at, 0, 5),
+                    'b_starts_at' => substr((string) $scheduleB->starts_at, 0, 5),
+                    'b_ends_at' => substr((string) $scheduleB->ends_at, 0, 5),
+                    'overlap_starts_at' => substr($overlapStart, 0, 5),
+                    'overlap_ends_at' => substr($overlapEnd, 0, 5),
+                    'overlap_minutes' => $this->minutesBetween($overlapStart, $overlapEnd),
                 ];
             }
         }
 
         return $overlaps;
+    }
+
+    public function timesOverlap(string $startA, string $endA, string $startB, string $endB): bool
+    {
+        return $this->overlaps($startA, $endA, $startB, $endB);
+    }
+
+    /**
+     * @return list<array{day: string, day_label: string, starts_at: string, ends_at: string}>
+     */
+    private function overlapDetails(CourseSection $sectionA, CourseSection $sectionB): array
+    {
+        return array_map(
+            fn (array $overlap) => [
+                'day' => $overlap['day'],
+                'day_label' => $overlap['day_label'],
+                'starts_at' => $overlap['overlap_starts_at'],
+                'ends_at' => $overlap['overlap_ends_at'],
+            ],
+            $this->detailedOverlaps($sectionA, $sectionB),
+        );
     }
 
     private function overlaps(string $startA, string $endA, string $startB, string $endB): bool
@@ -202,5 +241,13 @@ class ScheduleConflictDetector
     private function maxTime(string $a, string $b): string
     {
         return max($a, $b);
+    }
+
+    private function minutesBetween(string $start, string $end): int
+    {
+        [$startHour, $startMinute] = array_map('intval', explode(':', substr($start, 0, 5)));
+        [$endHour, $endMinute] = array_map('intval', explode(':', substr($end, 0, 5)));
+
+        return ($endHour * 60 + $endMinute) - ($startHour * 60 + $startMinute);
     }
 }

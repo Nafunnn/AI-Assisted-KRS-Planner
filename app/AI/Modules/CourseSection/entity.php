@@ -10,7 +10,7 @@ return [
     'description' => 'Kelompok/kelas spesifik dari satu mata kuliah. Ini unit yang dipilih mahasiswa saat menyusun KRS (via krs_plan_item). Setiap kelompok punya kode kelompok, periode waktu (Pagi/Malam), dan satu atau lebih slot jadwal (section_schedule). Bentrok jadwal dievaluasi antar kelompok yang dipilih.',
     'policy' => CourseOfferingPolicy::class,
     'permission_action' => 'list',
-    'scope' => 'course_owner',
+    'scope' => 'published_course',
     'searchable' => ['group_code'],
     'filterable' => ['id', 'course_id', 'group_code', 'time_period'],
     'sortable' => ['group_code', 'time_period', 'created_at'],
